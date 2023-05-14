@@ -1,0 +1,47 @@
+cabal-version:      2.4
+name:               haskell-opengl
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+
+-- The license under which the package is released.
+-- license:
+author:             hamzam3
+maintainer:         hamza.maimoune3@gmail.com
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files: CHANGELOG.md
+
+executable haskell-opengl
+    main-is:          Main.hs
+
+    -- Modules included in this executable, other than Main.
+    other-modules:    BoxTree, HTMLParser, ParserUtils.Parser, ParserUtils.BaseParser, ParserUtils.ParsingUtils, Display
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    build-depends:    base ^>=4.16.4.0,
+                      OpenGLRaw ^>=3.3.4.1,
+                      OpenGL ^>=3.0.3.0,
+                      GLUT ^>=2.7.0.16,
+                      StateVar ^>=1.2.1,
+                      random ^>=1.2.1.1,
+                      random-fu ^>=0.3.0.1,
+                      mwc-random ^>=0.15.0.2,
+                      freetype2 ^>=0.2.0,
+                      FTGL,
+                      lens
+    hs-source-dirs:   app
+    extra-lib-dirs:   /usr/local/lib
+    other-extensions: ForeignFunctionInterface
+    extra-libraries: ftgl
+    default-language: Haskell2010
