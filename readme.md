@@ -5,3 +5,7 @@ add ftgl to apt
 
 parametriser
 optimiser la structure de donnee
+
+add color
+
+add scroll

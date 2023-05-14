@@ -1,3 +1,4 @@
+import CSSParser
 import Data.List (genericLength)
 import Display
 import Foreign.C.String (castCharToCChar)
@@ -45,7 +46,7 @@ import HTMLParser
 import System.Exit (ExitCode (ExitSuccess), exitWith)
 
 main :: IO ()
-main = mainDisplay
+main = mainCSS
 
 -- myInit :: IO ()
 -- myInit = do

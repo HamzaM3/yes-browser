@@ -1,0 +1,24 @@
+div,
+p {
+  font-size: 16px;
+  background: #fff0b2;
+  color: #224e00;
+}
+
+header {
+  font-size: 32px;
+  background: #86aeab;
+  color: #494d4b;
+}
+
+h {
+  font-size: 24px;
+  background: #f0dc8b;
+  color: #500e0e;
+}
+
+li {
+  font-size: 10px;
+  background: #820684;
+  color: #f1cccc;
+}

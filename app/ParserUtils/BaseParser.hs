@@ -32,6 +32,9 @@ parseEnd = Parser $ \input -> nothingIf ((/=) "" . snd) (input, input)
 parseAlpha :: Parser String
 parseAlpha = Parser $ nothingIf ((==) "" . snd) . swap . span isAlpha
 
+parseDigit :: Parser String
+parseDigit = Parser $ nothingIf ((==) "" . snd) . swap . span isDigit
+
 parseFail :: Parser a
 parseFail = Parser $ const Nothing
 

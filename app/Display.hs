@@ -33,6 +33,38 @@ import Graphics.Rendering.FTGL
     setLayoutLineLength,
   )
 import Graphics.UI.GLUT
+  ( ClearBuffer (ColorBuffer),
+    Color (color),
+    Color3 (..),
+    Color4 (Color4),
+    DisplayMode (RGBMode, SingleBuffered),
+    GLfloat,
+    HasGetter (get),
+    HasSetter (($=)),
+    MatrixComponent (scale, translate),
+    MatrixMode (Modelview, Projection),
+    Position (Position),
+    Rect (rect),
+    ReshapeCallback,
+    Size (Size),
+    Vector3 (..),
+    Vertex2 (Vertex2),
+    clear,
+    clearColor,
+    createWindow,
+    currentColor,
+    displayCallback,
+    flush,
+    getArgsAndInitialize,
+    initialDisplayMode,
+    initialWindowSize,
+    loadIdentity,
+    mainLoop,
+    matrixMode,
+    ortho2D,
+    reshapeCallback,
+    viewport,
+  )
 import ParserUtils.Parser
 import System.Random.MWC (Gen, create)
 

@@ -8,7 +8,7 @@ import ParserUtils.Parser
 import ParserUtils.ParsingUtils
 
 data Tag = DivTag | PTag | OtherTag String
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 data HTMLDOM = SelfClosed Tag | TextNode String | EmptyNode Tag | Node Tag [HTMLDOM]
   deriving (Eq, Show)
@@ -23,24 +23,11 @@ tagToString PTag = "p"
 tagToString DivTag = "div"
 tagToString (OtherTag s) = s
 
-groupSpaces :: String -> String
-groupSpaces s = group $ span isSpace s
-  where
-    group :: (String, String) -> String
-    group (_, "") = ""
-    group ("", s) = a ++ group (span isSpace b)
-      where
-        (a, b) = break isSpace s
-    group (_, s) = " " ++ group ("", s)
-
 forbiddenChars :: [Char]
 forbiddenChars = ['<', '>', '/']
 
-isNotForbidden :: Char -> Bool
-isNotForbidden = and . (map (/=) forbiddenChars ??)
-
 parseNotForbidden :: Parser String
-parseNotForbidden = parseSpan isNotForbidden
+parseNotForbidden = parseSpan $ isNotForbidden forbiddenChars
 
 parseOpeningTag :: Parser Tag
 parseOpeningTag = stringToTag <$> (parseChar '<' *\\> parseAlpha <//* parseChar '>')

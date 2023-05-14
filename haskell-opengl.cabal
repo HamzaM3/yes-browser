@@ -25,7 +25,15 @@ executable haskell-opengl
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules:    BoxTree, HTMLParser, ParserUtils.Parser, ParserUtils.BaseParser, ParserUtils.ParsingUtils, Display
+    other-modules:    BoxTree,
+                      HTMLParser,
+                      ParserUtils.Parser,
+                      ParserUtils.BaseParser,
+                      ParserUtils.CheckParser,
+                      ParserUtils.ParsingUtils,
+                      Display,
+                      CSSParser,
+                      ElementStyle
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -39,7 +47,9 @@ executable haskell-opengl
                       mwc-random ^>=0.15.0.2,
                       freetype2 ^>=0.2.0,
                       FTGL,
-                      lens
+                      lens,
+                      Unique,
+                      containers
     hs-source-dirs:   app
     extra-lib-dirs:   /usr/local/lib
     other-extensions: ForeignFunctionInterface
