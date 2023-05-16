@@ -32,31 +32,32 @@ Directions: Parametrization and Optimization
 ### `Display.hs`
 
 - [ ] Replace `postRedisplay` with a more cheap update method
-- [ ] Improve update performance
+  - [ ] Improve update performance
 - [ ] Think about how to implement interactivity
-- [ ] Add the ability to select font
+- [ ] Add the ability to specify own font
 - [ ] Improve [FTGL](https://github.com/HamzaM3/ftgl) and [Haskell's wrapper of FTGL](https://github.com/HamzaM3/FTGL-haskell) by making it more efficient and better architectured
   - Check this [issue](https://github.com/frankheckenbach/ftgl/issues/10) that explains the defects
   - [ ] Fix the fact that you can't modify height of fonts and get its line height directly
+    - How about getting that info without creating the whole font
 - [ ] Minimize the creation of fonts and layouts
 - [ ] Make the display dependent on the window size (make it fast though !)
 - [ ] Fix the namespacing in the file (no points !)
 
-
 ### `BoxTree.hs`
+
 - [ ] Create a default CSS (instead of the unique default style)
 - [ ] Improve the data structures
   - Think about the incorporation of JS
   - Tags might be needed for JS manipulation
   - Deal with input and buttons (at some point)
 - [ ] Make sure there is always a value for all properties
-    - Remove as many `Maybe`s as possible
-    - Deal with inheritable values and non-inheritable
+  - Remove as many `Maybe`s as possible
+  - Deal with inheritable values and non-inheritable
 - [ ] Improve text box height calculation
-    - We have ftgl so modify it in order to do that
+  - We have ftgl so modify it in order to do that
 - [ ] Leaf => ShallowEmptyNode ?
 - [ ] margin padding width height min-width min-height elementwise
-    - how are they actually specified ?
+  - how are they actually specified ?
 - [ ] Add flex and grid
 - [ ] Add relative units
 - [ ] Add position and floats
@@ -98,10 +99,10 @@ Directions: Parametrization and Optimization
 - [ ] Add all properties
 - [ ] Create default style sheet
 - [ ] Implement data structure incorporating priority of selector
-    - i.e. data structure has to be order lexicographically based on (spec priority, precedence)
+  - i.e. data structure has to be order lexicographically based on (spec priority, precedence)
 - [ ] Implement forgiveness (not correct don't imply exception)
 - [ ] Create value parsers and combine them
-    - [ ] Create a map (property -> value types) and build parsers from that
+  - [ ] Create a map (property -> value types) and build parsers from that
 - [ ] Last semi colon is OK
 - [ ] Improve perf
 - [ ] Deal with units
@@ -118,3 +119,7 @@ Directions: Parametrization and Optimization
 - [ ] What should the scroll speed ?
 - [ ] Let's accept tablet ?
   - An Haskell mobile app ?
+
+### Javascript
+
+How to implement Javascript ? Let's discuss !
