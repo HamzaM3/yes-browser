@@ -12,8 +12,8 @@ main = do
   mainLoop
   where
     htmlPath :: String
-    htmlPath = "file.html"
+    htmlPath = "testFiles/file.html"
     cssPath :: String
-    cssPath = "style.css"
+    cssPath = "testFiles/style.css"
     fontPath :: String
-    fontPath = "app/font/Roboto/Roboto-Regular.ttf"
+    fontPath = "testFiles/font/Roboto/Roboto-Regular.ttf"
