@@ -7,6 +7,7 @@ import Data.Char (ord)
 import Data.List.Unique
 import Data.Map (Map, singleton, unionsWith)
 import ElementStyle
+import qualified GHC.Generics
 import Graphics.GL.Types (GLfloat)
 import Graphics.UI.GLUT (Color4 (Color4))
 import HTMLParser
@@ -24,15 +25,30 @@ import ParserUtils.Parser
   )
 import ParserUtils.ParsingUtils (hexToColor4, isAuthorized)
 
+{-
+  TODO:
+    - implement selectors
+    - add all properties
+    - create default style sheet
+    - implement data structure incorporating priority of selector
+      - i.e. data structure has to be order lexicographically based on (spec priority, precedence)
+    - implement forgiveness (not correct don't imply exception)
+    - abstract value parsers and combine them
+      - create a dict property -> value type and build parser from that
+    - no last semi colon => ok
+    - improve perf
+    - deal with units
+-}
+
 newtype Selector = ElementSelector Tag
   deriving (Show, Eq, Ord)
+
+type Selectors = [Selector]
 
 data Declaration = Background (Color4 GLfloat) | FontSize Int | Color (Color4 GLfloat)
   deriving (Show, Eq)
 
 type Declarations = [Declaration]
-
-type Selectors = [Selector]
 
 newtype DeclarationBlock = DeclarationBlock Declarations
   deriving (Show, Eq)
@@ -129,6 +145,7 @@ summarizeDeclarations :: Declarations -> ElementStyle
 summarizeDeclarations [] = emptyStyle
 summarizeDeclarations (Background col : rest) = backgroundStyle col <|>> summarizeDeclarations rest
 summarizeDeclarations (FontSize size : rest) = fontSizeStyle size <|>> summarizeDeclarations rest
+summarizeDeclarations (Color col : rest) = colorStyle col <|>> summarizeDeclarations rest
 
 summarizeDeclarationBlock :: DeclarationBlock -> ElementStyle
 summarizeDeclarationBlock (DeclarationBlock decls) = summarizeDeclarations decls

@@ -33,7 +33,9 @@ executable haskell-opengl
                       ParserUtils.ParsingUtils,
                       Display,
                       CSSParser,
-                      ElementStyle
+                      ElementStyle,
+                      GlobalStyle,
+                      GlobalScroll
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

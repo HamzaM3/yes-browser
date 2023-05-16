@@ -1,24 +1,28 @@
+html {
+  background: #cbfffb;
+}
+
 div,
 p {
-  font-size: 16px;
-  background: #fff0b2;
+  font-size: 20px;
+  background: #ff8c8c;
   color: #224e00;
 }
 
 header {
-  font-size: 32px;
+  font-size: 40px;
   background: #86aeab;
   color: #494d4b;
 }
 
 h {
   font-size: 24px;
-  background: #f0dc8b;
+  background: #c77fe8;
   color: #500e0e;
 }
 
 li {
-  font-size: 10px;
+  font-size: 16px;
   background: #820684;
   color: #f1cccc;
 }

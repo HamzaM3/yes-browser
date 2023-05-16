@@ -1,16 +1,43 @@
 module HTMLParser where
 
-import Control.Applicative (Alternative (..), (<**>))
-import Control.Lens.Lens
+import Control.Applicative (Alternative ((<|>)))
 import Data.Char (isSpace)
 import ParserUtils.BaseParser
+  ( parseAlpha,
+    parseChar,
+    parseEnd,
+    parseSpan,
+    parseString,
+  )
+import ParserUtils.CheckParser (checkString)
 import ParserUtils.Parser
+  ( Parser (runParser),
+    parseMaxPossible,
+    parseWhiteSpace,
+    (*\\>),
+    (<//*),
+  )
 import ParserUtils.ParsingUtils
+  ( groupSpaces,
+    isNotForbidden,
+    removeTailWhiteSpace,
+  )
+
+{-
+  TODO:
+    - add more tags
+    - add attributes
+    - deal with ids
+    - deal with classes
+    - deal with head and body
+    - implement forgiveness (imcomplete doesn't imply exception)
+    - implement the whole spec
+-}
 
 data Tag = DivTag | PTag | OtherTag String
   deriving (Eq, Show, Ord)
 
-data HTMLDOM = SelfClosed Tag | TextNode String | EmptyNode Tag | Node Tag [HTMLDOM]
+data HTMLDOM = SelfClosed Tag | TextNode String | Node Tag [HTMLDOM]
   deriving (Eq, Show)
 
 stringToTag :: String -> Tag
@@ -36,7 +63,7 @@ parseClosingTag :: Parser Tag
 parseClosingTag = stringToTag <$> (parseString "</" *\\> parseAlpha <//* parseChar '>')
 
 parseSpecificClosingTag :: Tag -> Parser Tag
-parseSpecificClosingTag tag = tag <$ (parseString "</" *\\> parseString (tagToString tag) <//* parseChar '>')
+parseSpecificClosingTag tag = tag <$ (parseString "</" *\\> parseAlpha <//* parseChar '>' >>= checkString (tagToString tag))
 
 parseSelfClosingTag :: Parser Tag
 parseSelfClosingTag = stringToTag <$> (parseChar '<' *\\> parseAlpha <//* parseString "/>")
@@ -61,14 +88,14 @@ mainParser = do
   print $
     runParser
       parsePage
-      "<HTML>\
-      \<HEAD>\
-      \<TITLE>Auto-generated html formated source</TITLE>\
-      \<META/>\
-      \</HEAD>\
-      \<BODY>\
-      \<P> okk </P>\
-      \<PRE> okok</PRE>\
-      \</BODY>\
-      \</HTML>\
+      "<html>\
+      \<head>\
+      \<title>Auto-generated html formated source</title>\
+      \<meta/>\
+      \</head>\
+      \<body>\
+      \<p> okk </p>\
+      \<pre> okok</pre>\
+      \</body>\
+      \</html>\
       \"

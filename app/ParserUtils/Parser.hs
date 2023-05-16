@@ -10,6 +10,14 @@ import Data.List (find)
 import Data.Tuple (swap)
 import ParserUtils.ParsingUtils (mapSnd, (:+:))
 
+{-
+  TODO:
+  - use better parser methods
+    - don't waste already parse elements
+    - error messages
+    - ast eval framework
+-}
+
 -------------------------------------
 
 newtype Parser a = Parser

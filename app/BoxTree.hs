@@ -1,40 +1,47 @@
 module BoxTree where
 
-import Control.Monad (forM_)
-import Data.Foldable (foldl')
-import Data.List.NonEmpty (fromList, toList)
-import Data.Monoid (Sum (..))
-import Data.Random
-import Foreign
-import Foreign.C
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Array
-import Foreign.Ptr
-import FreeType
-import GHC.Base
+import CSSParser (Selector (ElementSelector), StyleMap (..))
+import Data.Map ((!))
+import Data.Map.Lazy (member)
+import Data.Maybe (fromJust)
+import ElementStyle (ElementStyle (fontSize), emptyStyle, (<|>>))
+import Foreign (Ptr, allocaBytes, peekArray)
+import Foreign.C (CFloat, CString, withCString)
 import GHC.IO.Unsafe (unsafePerformIO)
 import Graphics.Rendering.FTGL
-  ( Font,
-    Layout,
-    RenderMode (All),
+  ( Layout,
     createSimpleLayout,
     createTextureFont,
-    destroyFont,
-    destroyLayout,
-    getFontAscender,
-    getFontDescender,
-    getFontError,
     getFontLineHeight,
-    renderFont,
-    renderLayout,
     setFontFaceSize,
     setLayoutFont,
     setLayoutLineLength,
   )
-import Graphics.UI.GLUT
-import HTMLParser
-import ParserUtils.Parser
-import System.Random.MWC (Gen, create)
+import HTMLParser (HTMLDOM (..), parsePage)
+import ParserUtils.Parser (Parser)
+
+{-
+  TODO:
+    - remove default value and allow css to fill them
+    - improve the data structure
+      - tag might be needed for JS manipulation
+      - deal with input and buttons (maybe ?)
+    - make sure there is always a value for all properties
+      - default value
+      - deal with inheritable values and non-inheritable
+    - improve text box height calculation
+      - we have ftgl so modify the lib in order to do that
+    - how to style text box
+      - I think it should inherit from its parent style (we don't css text boxes)
+    - Leaf => ShallowEmptyNode ?
+    - margin padding width height min-w min-h elementwise
+      - how are they actually specified ?
+    - flex grid
+    - relative units
+    - position, floats
+    - selector => element style
+    - giga func of type :: css file -> html file -> display tree
+-}
 
 foreign import ccall unsafe "ftglGetLayoutBBox"
   ftglGetLayoutBBox :: Graphics.Rendering.FTGL.Layout -> CString -> Ptr CFloat -> IO ()
@@ -55,7 +62,7 @@ getLayoutWidth l s = unsafePerformIO $ do
   [x1, _, _, x2, _, _] <- getLayoutBBox l s
   return $ x2 - x1
 
-data ShallowTree = Leaf | ShallowTextNode String | ShallowNode [ShallowTree]
+data ShallowTree = Leaf ElementStyle | ShallowTextNode String | ShallowNode ElementStyle [ShallowTree]
   deriving (Eq, Show)
 
 -- (width, height)
@@ -67,8 +74,12 @@ type CornerPosition = (Int, Int)
 data Box = Box Dimension CornerPosition
   deriving (Eq, Show)
 
-data DisplayTree = DisplayLeaf Box String | DisplayNode Box [DisplayTree]
+data DisplayTree = DisplayLeaf Box ElementStyle String | DisplayNode Box ElementStyle [DisplayTree]
   deriving (Eq, Show)
+
+type FontPath = String
+
+-- temporary global style
 
 minH :: Int
 minH = 30
@@ -76,52 +87,95 @@ minH = 30
 padding :: Int
 padding = 10
 
-fontSize :: Int
-fontSize = 24
-
 margin :: Int
 margin = 10
+
+-- fontPath elementStyle width s
+getTextHeight :: FontPath -> ElementStyle -> Int -> String -> Float
+getTextHeight fontPath elementStyle width s = unsafePerformIO $ do
+  font <- createTextureFont fontPath
+  let fontSize = fromJust $ ElementStyle.fontSize elementStyle
+  setFontFaceSize font fontSize fontSize
+
+  layout <- createSimpleLayout
+  setLayoutFont layout font
+  setLayoutLineLength layout (fromIntegral width)
+  let v = getFontLineHeight font
+  let u = getLayoutHeight layout s
+  return $ getAboveMultiple v u
 
 getAboveMultiple :: Float -> Float -> Float
 getAboveMultiple x y = x * fromIntegral (ceiling (y / x))
 
-getXYs :: Graphics.Rendering.FTGL.Font -> CornerPosition -> Int -> ShallowTree -> DisplayTree
-getXYs font (x, y) width Leaf = DisplayLeaf (Box (width, minH) (x, y)) ""
-getXYs font (x, y) width (ShallowTextNode s) = DisplayLeaf (Box (width, ceiling h) (x, y)) s
+shallowToDisplay :: ElementStyle -> FontPath -> CornerPosition -> Int -> ShallowTree -> DisplayTree
+shallowToDisplay elementStyle fontPath (x, y) width = shallowToDisplay'
   where
-    h :: Float
-    h = unsafePerformIO $ do
-      layout <- createSimpleLayout
-      setLayoutFont layout font
-      setLayoutLineLength layout (fromIntegral width)
-      let v = getFontLineHeight font
-      let u = getLayoutHeight layout s
-      return $ getAboveMultiple v u
-getXYs font (x, y) width (ShallowNode []) = DisplayNode (Box (width, minH) (x, y)) []
-getXYs font (x, y) width (ShallowNode children) = DisplayNode (Box rootDimension (x, y)) displays
+    shallowToDisplay' (Leaf elementStyle') =
+      DisplayLeaf
+        (Box (width, minH) (x, y))
+        (elementStyle <|>> elementStyle')
+        ""
+    shallowToDisplay' (ShallowTextNode s) =
+      DisplayLeaf
+        (Box (width, ceiling textNodeHeight) (x, y))
+        (emptyStyle <|>> elementStyle)
+        s
+      where
+        textNodeHeight :: Float
+        textNodeHeight = getTextHeight fontPath elementStyle width s
+    shallowToDisplay' (ShallowNode elementStyle' []) =
+      DisplayNode
+        (Box (width, minH) (x, y))
+        (elementStyle <|>> elementStyle')
+        []
+    shallowToDisplay' (ShallowNode elementStyle' children) =
+      DisplayNode
+        (Box rootDimension (x, y))
+        (elementStyle <|>> elementStyle')
+        displayTrees
+      where
+        getNextSiblingCorner :: DisplayTree -> CornerPosition
+        getNextSiblingCorner (DisplayLeaf (Box (_, h) (x, 9)) _ _) = (x, y + h + margin)
+        getNextSiblingCorner (DisplayNode (Box (_, h) (x, y)) _ _) = (x, y + h + margin)
+        displayTrees :: [DisplayTree]
+        displayTrees = Prelude.foldl addNext [headDisplay] (tail children)
+          where
+            headDisplay :: DisplayTree
+            headDisplay =
+              shallowToDisplay
+                (elementStyle <|>> elementStyle')
+                fontPath
+                (x + padding, y + padding)
+                (width - 2 * padding)
+                (head children)
+            addNext :: [DisplayTree] -> ShallowTree -> [DisplayTree]
+            addNext listDisplayTree shallowTree =
+              listDisplayTree
+                ++ [ shallowToDisplay
+                       (elementStyle <|>> elementStyle')
+                       fontPath
+                       (x', y')
+                       (width - 2 * padding)
+                       shallowTree
+                   ]
+              where
+                (x', y') = getNextSiblingCorner (last listDisplayTree)
+        rootDimension :: CornerPosition
+        rootDimension = (width, height)
+          where
+            height = getLowerY (last displayTrees) + padding - y
+        getLowerY :: DisplayTree -> Int
+        getLowerY (DisplayLeaf (Box (_, h) (_, y)) _ _) = y + h
+        getLowerY (DisplayNode (Box (_, h) (_, y)) _ _) = y + h
+
+htmlToShallow :: StyleMap -> HTMLDOM -> ShallowTree
+htmlToShallow (StyleMap styleMap) = htmlToShallow'
   where
-    getNextSiblingCorner :: DisplayTree -> CornerPosition
-    getNextSiblingCorner (DisplayLeaf (Box (_, h) (x, y)) _) = (x, y + h + margin)
-    getNextSiblingCorner (DisplayNode (Box (_, h) (x, y)) _) = (x, y + h + margin)
-    displays :: [DisplayTree]
-    displays = Prelude.foldr addNext [headDisplay] (tail children)
+    htmlToShallow' (SelfClosed tag) = ShallowTextNode ""
+    htmlToShallow' (TextNode s) = ShallowTextNode s
+    htmlToShallow' (Node tag children) = ShallowNode elementStyle (htmlToShallow' <$> children)
       where
-        headDisplay :: DisplayTree
-        headDisplay = getXYs font (x + padding, y + padding) (width - 2 * padding) (head children)
-        addNext :: ShallowTree -> [DisplayTree] -> [DisplayTree]
-        addNext d l = let (x', y') = getNextSiblingCorner (last l) in l ++ [getXYs font (x', y') (width - 2 * padding) d]
-    rootDimension :: CornerPosition
-    rootDimension = (width, height)
-      where
-        height = getLowerY (last displays) + padding - y
-    getLowerY :: DisplayTree -> Int
-    getLowerY (DisplayLeaf (Box (_, h) (_, y)) _) = y + h
-    getLowerY (DisplayNode (Box (_, h) (_, y)) _) = y + h
+        elementStyle = if member (ElementSelector tag) styleMap then styleMap ! ElementSelector tag else emptyStyle
 
-htmlToShallow :: HTMLDOM -> ShallowTree
-htmlToShallow (SelfClosed _) = ShallowTextNode ""
-htmlToShallow (TextNode s) = ShallowTextNode s
-htmlToShallow (Node _ children) = ShallowNode (htmlToShallow <$> children)
-
-parseDisplay :: Graphics.Rendering.FTGL.Font -> CornerPosition -> Int -> Parser DisplayTree
-parseDisplay font corner width = getXYs font corner width . htmlToShallow <$> parsePage
+parseDisplay :: StyleMap -> FontPath -> CornerPosition -> Int -> Parser DisplayTree
+parseDisplay styleMap font corner width = shallowToDisplay emptyStyle font corner width . htmlToShallow styleMap <$> parsePage

@@ -10,7 +10,7 @@ import ParserUtils.Parser (Parser (..))
 import ParserUtils.ParsingUtils (mapSnd, nothingIf)
 
 parseRest :: Parser String
-parseRest = p <* (parseChar '\n' <|> pure 'a') -- turn maybe parsers into unfailable parser
+parseRest = p <* (parseChar '\n' <|> pure 'a') -- turn maybe parsers into unfailable parser (not OK)
   where
     p = Parser $ Just . swap . span ('\n' /=)
 
@@ -47,5 +47,5 @@ parseSpanChar c = parseSpan (c ==)
 parseString :: String -> Parser String
 parseString s = Parser $ nothingIf ((/=) s . snd) . swap . splitAt (length s)
 
-parseExcludeChar :: [Char] -> Parser String
-parseExcludeChar l = parseSpan (and . (map (/=) l ??))
+parseExcludeChars :: [Char] -> Parser String
+parseExcludeChars l = parseSpan (and . (map (/=) l ??))

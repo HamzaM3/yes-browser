@@ -5,6 +5,13 @@ import GHC.Base (Alternative (..))
 import Graphics.GL.Types (GLfloat)
 import Graphics.UI.GLUT (Color4 (Color4))
 
+{-
+  TODO:
+  - default style sheet
+  - more props
+  - deal with inhertance or not
+-}
+
 data ElementStyle = ElementStyle
   { background :: Maybe (Color4 GLfloat),
     fontSize :: Maybe Int,
@@ -46,4 +53,12 @@ colorStyle :: Color4 GLfloat -> ElementStyle
 colorStyle col =
   emptyStyle
     { color = Just col
+    }
+
+defaultStyle :: ElementStyle
+defaultStyle =
+  ElementStyle
+    { background = Just $ Color4 1 1 1 1,
+      fontSize = Just 16,
+      color = Just $ Color4 0 0 0 1
     }
