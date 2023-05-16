@@ -1,10 +1,8 @@
 module BoxTree where
 
-import CSSParser (Selector (ElementSelector), StyleMap (..))
 import Data.Map ((!))
 import Data.Map.Lazy (member)
 import Data.Maybe (fromJust)
-import ElementStyle (ElementStyle (fontSize), emptyStyle, (<|>>))
 import Foreign (Ptr, allocaBytes, peekArray)
 import Foreign.C (CFloat, CString, withCString)
 import GHC.IO.Unsafe (unsafePerformIO)
@@ -17,8 +15,10 @@ import Graphics.Rendering.FTGL
     setLayoutFont,
     setLayoutLineLength,
   )
-import HTMLParser (HTMLDOM (..), parsePage)
-import ParserUtils.Parser (Parser)
+import Parsers.CSSParser (Selector (ElementSelector), StyleMap (..))
+import Parsers.ElementStyle (ElementStyle (fontSize), emptyStyle, (<|>>))
+import Parsers.HTMLParser (HTMLDOM (..), parsePage)
+import Parsers.ParserUtils.Parser (Parser)
 
 {-
   TODO:
@@ -94,7 +94,7 @@ margin = 10
 getTextHeight :: FontPath -> ElementStyle -> Int -> String -> Float
 getTextHeight fontPath elementStyle width s = unsafePerformIO $ do
   font <- createTextureFont fontPath
-  let fontSize = fromJust $ ElementStyle.fontSize elementStyle
+  let fontSize = fromJust $ Parsers.ElementStyle.fontSize elementStyle
   setFontFaceSize font fontSize fontSize
 
   layout <- createSimpleLayout

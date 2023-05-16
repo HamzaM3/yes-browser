@@ -1,7 +1,7 @@
 module Main where
 
 import Display (initializeGL, setCallbacks)
-import Graphics.UI.GLUT.Begin (mainLoop)
+import Graphics.UI.GLUT (mainLoop)
 
 main :: IO ()
 main = do

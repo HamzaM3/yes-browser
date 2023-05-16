@@ -2,13 +2,13 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ParserUtils.Parser where
+module Parsers.ParserUtils.Parser where
 
 import Control.Applicative (Alternative (..), (<**>))
 import Data.Char (isAlpha, isDigit, isSpace)
 import Data.List (find)
 import Data.Tuple (swap)
-import ParserUtils.ParsingUtils (mapSnd, (:+:))
+import Parsers.ParserUtils.ParsingUtils (mapSnd, (:+:))
 
 {-
   TODO:

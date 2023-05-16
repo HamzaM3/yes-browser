@@ -1,4 +1,4 @@
-module GlobalScroll where
+module GlobalStates.GlobalScroll where
 
 import Data.StateVar (HasGetter (get), StateVar (StateVar), ($=))
 import Foreign (malloc)

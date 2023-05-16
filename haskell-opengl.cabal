@@ -1,5 +1,5 @@
 cabal-version:      2.4
-name:               haskell-opengl
+name:               yes-browser
 version:            0.1.0.0
 
 -- A short (one-line) description of the package.
@@ -26,28 +26,23 @@ executable haskell-opengl
 
     -- Modules included in this executable, other than Main.
     other-modules:    BoxTree,
-                      HTMLParser,
-                      ParserUtils.Parser,
-                      ParserUtils.BaseParser,
-                      ParserUtils.CheckParser,
-                      ParserUtils.ParsingUtils,
                       Display,
-                      CSSParser,
-                      ElementStyle,
-                      GlobalStyle,
-                      GlobalScroll
+                      GlobalStates.GlobalStyle,
+                      GlobalStates.GlobalScroll,
+                      Parsers.HTMLParser,
+                      Parsers.CSSParser,
+                      Parsers.ElementStyle
+                      Parsers.ParserUtils.BaseParser,
+                      Parsers.ParserUtils.CheckParser,
+                      Parsers.ParserUtils.Parser,
+                      Parsers.ParserUtils.ParsingUtils
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base ^>=4.16.4.0,
-                      OpenGLRaw ^>=3.3.4.1,
                       OpenGL ^>=3.0.3.0,
                       GLUT ^>=2.7.0.16,
                       StateVar ^>=1.2.1,
-                      random ^>=1.2.1.1,
-                      random-fu ^>=0.3.0.1,
-                      mwc-random ^>=0.15.0.2,
-                      freetype2 ^>=0.2.0,
                       FTGL,
                       lens,
                       Unique,

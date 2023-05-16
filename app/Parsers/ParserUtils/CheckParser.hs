@@ -1,7 +1,7 @@
-module ParserUtils.CheckParser where
+module Parsers.ParserUtils.CheckParser where
 
 import Control.Applicative
-import ParserUtils.Parser
+import Parsers.ParserUtils.Parser
 
 {-
   Dependent parsing

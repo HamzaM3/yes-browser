@@ -1,9 +1,8 @@
-module ElementStyle where
+module Parsers.ElementStyle where
 
 import Control.Applicative (Alternative)
 import GHC.Base (Alternative (..))
-import Graphics.GL.Types (GLfloat)
-import Graphics.UI.GLUT (Color4 (Color4))
+import Graphics.UI.GLUT (Color4 (Color4), GLfloat)
 
 {-
   TODO:

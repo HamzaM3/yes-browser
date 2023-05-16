@@ -1,13 +1,13 @@
 {-# LANGUAGE TupleSections #-}
 
-module ParserUtils.BaseParser where
+module Parsers.ParserUtils.BaseParser where
 
 import Control.Applicative (Alternative (..), (<**>))
 import Control.Lens.Lens
 import Data.Char (isAlpha, isDigit)
 import Data.Tuple (swap)
-import ParserUtils.Parser (Parser (..))
-import ParserUtils.ParsingUtils (mapSnd, nothingIf)
+import Parsers.ParserUtils.Parser (Parser (..))
+import Parsers.ParserUtils.ParsingUtils (mapSnd, nothingIf)
 
 parseRest :: Parser String
 parseRest = p <* (parseChar '\n' <|> pure 'a') -- turn maybe parsers into unfailable parser (not OK)

@@ -1,23 +1,23 @@
-module HTMLParser where
+module Parsers.HTMLParser where
 
 import Control.Applicative (Alternative ((<|>)))
 import Data.Char (isSpace)
-import ParserUtils.BaseParser
+import Parsers.ParserUtils.BaseParser
   ( parseAlpha,
     parseChar,
     parseEnd,
     parseSpan,
     parseString,
   )
-import ParserUtils.CheckParser (checkString)
-import ParserUtils.Parser
+import Parsers.ParserUtils.CheckParser (checkString)
+import Parsers.ParserUtils.Parser
   ( Parser (runParser),
     parseMaxPossible,
     parseWhiteSpace,
     (*\\>),
     (<//*),
   )
-import ParserUtils.ParsingUtils
+import Parsers.ParserUtils.ParsingUtils
   ( groupSpaces,
     isNotForbidden,
     removeTailWhiteSpace,

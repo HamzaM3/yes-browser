@@ -1,12 +1,11 @@
 {-# LANGUAGE TypeOperators #-}
 
-module ParserUtils.ParsingUtils where
+module Parsers.ParserUtils.ParsingUtils where
 
 import Control.Lens.Lens ((??))
 import Data.Char (isSpace)
 import GHC.Base (ord)
-import Graphics.GL (GLfloat)
-import Graphics.Rendering.OpenGL (Color4 (Color4))
+import Graphics.Rendering.OpenGL (Color4 (Color4), GLfloat)
 
 mapFst :: (a -> c) -> (a, b) -> (c, b)
 mapFst f (a, b) = (f a, b)

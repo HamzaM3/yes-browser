@@ -8,22 +8,15 @@ import BoxTree
     FontPath,
     parseDisplay,
   )
-import CSSParser
-  ( StyleMap,
-    StyleSheet,
-    cascadeSheets,
-    parseStyleSheet,
-  )
 import Control.Monad (forM_)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.StateVar
   ( HasGetter (get),
     HasSetter (($=)),
   )
-import ElementStyle (ElementStyle (background, color, fontSize))
 import GHC.IO.Unsafe (unsafePerformIO)
-import GlobalScroll (ScrollState (ScrollState, scrollPosition), currentScrollState)
-import GlobalStyle (currentStyle, withStyle)
+import GlobalStates.GlobalScroll (ScrollState (ScrollState, scrollPosition), currentScrollState)
+import GlobalStates.GlobalStyle (currentStyle, withStyle)
 import Graphics.Rendering.FTGL
   ( Font,
     Layout,
@@ -75,9 +68,15 @@ import Graphics.UI.GLUT
     viewport,
     windowSize,
   )
-import HTMLParser (parsePage)
-import ParserUtils.Parser
-import System.Random.MWC (Gen, create)
+import Parsers.CSSParser
+  ( StyleMap,
+    StyleSheet,
+    cascadeSheets,
+    parseStyleSheet,
+  )
+import Parsers.ElementStyle (ElementStyle (background, color, fontSize))
+import Parsers.HTMLParser (parsePage)
+import Parsers.ParserUtils.Parser
 
 {-
   TODO:
@@ -125,11 +124,11 @@ getFont fontPath size = do
 showText :: FontPath -> CornerPosition -> Dimension -> String -> IO ()
 showText fontPath (x, y) (w, h) text = do
   style <- get currentStyle
-  let fontSize = fromJust $ ElementStyle.fontSize style -- fontsize has to be defined (=> remove the Maybe)
+  let fontSize = fromJust $ Parsers.ElementStyle.fontSize style -- fontsize has to be defined (=> remove the Maybe)
   (font, layout) <- getFontAndLayout fontSize
   let asc = getFontAscender font
 
-  mapM_ Graphics.UI.GLUT.color $ ElementStyle.color style -- maybe change color
+  mapM_ Graphics.UI.GLUT.color $ Parsers.ElementStyle.color style -- maybe change color
   moveCursor asc x y
   renderLayout layout text
   moveCursorBack asc x y
@@ -156,7 +155,7 @@ showText fontPath (x, y) (w, h) text = do
 drawBox :: Box -> IO ()
 drawBox (Box (w, h) (x, y)) = do
   style <- get currentStyle
-  mapM_ Graphics.UI.GLUT.color $ ElementStyle.background style
+  mapM_ Graphics.UI.GLUT.color $ Parsers.ElementStyle.background style
   rect
     (Vertex2 (fromIntegral x :: GLfloat) (-fromIntegral (y + h)))
     (Vertex2 (fromIntegral (x + w)) (-fromIntegral y))

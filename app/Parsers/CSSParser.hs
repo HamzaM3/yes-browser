@@ -1,19 +1,16 @@
-{-# OPTIONS_GHC -Wno-missing-fields #-}
-
-module CSSParser where
+module Parsers.CSSParser where
 
 import Control.Applicative (Alternative ((<|>)), empty)
 import Data.Char (ord)
-import Data.List.Unique
+import Data.List.Unique (uniq)
 import Data.Map (Map, singleton, unionsWith)
-import ElementStyle
 import qualified GHC.Generics
-import Graphics.GL.Types (GLfloat)
-import Graphics.UI.GLUT (Color4 (Color4))
-import HTMLParser
-import ParserUtils.BaseParser
-import ParserUtils.CheckParser
-import ParserUtils.Parser
+import Graphics.UI.GLUT (Color4 (Color4), GLfloat)
+import Parsers.ElementStyle
+import Parsers.HTMLParser
+import Parsers.ParserUtils.BaseParser
+import Parsers.ParserUtils.CheckParser
+import Parsers.ParserUtils.Parser
   ( Parser (runParser),
     parseMaxPossible,
     parseWhiteSpace,
@@ -23,7 +20,7 @@ import ParserUtils.Parser
     (<//*),
     (<//*>),
   )
-import ParserUtils.ParsingUtils (hexToColor4, isAuthorized)
+import Parsers.ParserUtils.ParsingUtils (hexToColor4, isAuthorized)
 
 {-
   TODO:
