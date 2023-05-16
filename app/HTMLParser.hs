@@ -26,6 +26,7 @@ import ParserUtils.ParsingUtils
 {-
   TODO:
     - add more tags
+      - tags with numbers (h1, h2...)
     - add attributes
     - deal with ids
     - deal with classes
