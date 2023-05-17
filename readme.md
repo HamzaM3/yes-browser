@@ -2,6 +2,8 @@
 
 Yes, it's a browser
 
+![Browser demo](https://github.com/HamzaM3/yes-browser/blob/b90fa67d74e96415c5f0e23f7537fad81dccc5da/img/smallDemo.gif)
+
 ## Purpose
 
 This is an experimental browser to explore the challenges posed by browsers and what they should be constituted of.
@@ -27,9 +29,9 @@ For example, the basic properties of CSS are actually very few: https://www.w3.o
 
 ## Todo
 
-*Directions:* Generalization and Optimization
+_Directions:_ Generalization and Optimization
 
-*Priority:* implement some Javascript while the functionalities are small (if it's bigger it will be hard)
+_Priority:_ implement some Javascript while the functionalities are small (if it's bigger it will be hard)
 
 => all the core components of the browser have to be implemented first. Then we'll generalize and optimize progressively all at the same time.
 
