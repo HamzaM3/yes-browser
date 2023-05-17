@@ -2,9 +2,7 @@
 
 Yes, it's a browser
 
-<div style="display:flex; justify-content:center;">
 <img src="https://github.com/HamzaM3/yes-browser/blob/b90fa67d74e96415c5f0e23f7537fad81dccc5da/img/smallDemo.gif" width="500" />
-</div>
 
 ## Purpose
 
