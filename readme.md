@@ -27,7 +27,11 @@ For example, the basic properties of CSS are actually very few: https://www.w3.o
 
 ## Todo
 
-Directions: Parametrization and Optimization
+*Directions:* Generalization and Optimization
+
+*Priority:* implement some Javascript while the functionalities are small (if it's bigger it will be hard)
+
+=> all the core components of the browser have to be implemented first. Then we'll generalize and optimize progressively all at the same time.
 
 ### `Display.hs`
 
