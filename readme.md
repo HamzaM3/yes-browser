@@ -126,4 +126,4 @@ For example, the basic properties of CSS are actually very few: https://www.w3.o
 
 ### Javascript
 
-How to implement Javascript ? Let's discuss !
+How to implement Javascript ? Let's [discuss](https://github.com/HamzaM3/yes-browser/tree/javascript) !
