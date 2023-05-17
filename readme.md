@@ -2,7 +2,7 @@
 
 Yes, it's a browser
 
-![Browser demo](https://github.com/HamzaM3/yes-browser/blob/b90fa67d74e96415c5f0e23f7537fad81dccc5da/img/smallDemo.gif)
+<img src="https://github.com/HamzaM3/yes-browser/blob/b90fa67d74e96415c5f0e23f7537fad81dccc5da/img/smallDemo.gif" width="300" />
 
 ## Purpose
 
