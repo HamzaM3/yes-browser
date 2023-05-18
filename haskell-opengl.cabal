@@ -29,8 +29,10 @@ executable haskell-opengl
                       Display,
                       GlobalStates.GlobalStyle,
                       GlobalStates.GlobalScroll,
+                      GlobalStates.GlobalEventLoop,
                       Parsers.HTMLParser,
                       Parsers.CSSParser,
+                      Parsers.JSParser,
                       Parsers.ElementStyle
                       Parsers.ParserUtils.BaseParser,
                       Parsers.ParserUtils.CheckParser,

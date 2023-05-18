@@ -2,9 +2,10 @@ module Main where
 
 import Display (initializeGL, setCallbacks)
 import Graphics.UI.GLUT (mainLoop)
+import Parsers.JSParser (mainJS)
 
-main :: IO ()
-main = do
+mainFinal :: IO ()
+mainFinal = do
   htmlFile <- readFile htmlPath
   cssFile <- readFile cssPath
   initializeGL
@@ -17,3 +18,6 @@ main = do
     cssPath = "testFiles/style.css"
     fontPath :: String
     fontPath = "testFiles/font/Roboto/Roboto-Regular.ttf"
+
+main :: IO ()
+main = mainJS

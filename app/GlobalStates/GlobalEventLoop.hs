@@ -1,3 +1,2 @@
-module GlobalEventLoop where
+module GlobalStates.GlobalEventLoop where
 
--- implement the event loop
