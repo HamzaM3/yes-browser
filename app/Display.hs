@@ -6,15 +6,19 @@ import BoxTree
     Dimension,
     DisplayTree (..),
     FontPath,
+    ShallowTree,
+    htmlToShallow,
     parseDisplay,
+    shallowToDisplay,
   )
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.StateVar
   ( HasGetter (get),
     HasSetter (($=)),
   )
 import GHC.IO.Unsafe (unsafePerformIO)
+import GlobalStates.GlobalEventLoop (combineBackgroundChange)
 import GlobalStates.GlobalScroll (ScrollState (ScrollState, scrollPosition), currentScrollState)
 import GlobalStates.GlobalStyle (currentStyle, withStyle)
 import Graphics.Rendering.FTGL
@@ -40,8 +44,10 @@ import Graphics.UI.GLUT
     DisplayCallback,
     DisplayMode (RGBMode, SingleBuffered),
     GLfloat,
+    KeyState (Down),
     MatrixComponent (translate),
     MatrixMode (Modelview, Projection),
+    MouseButton (LeftButton),
     MouseWheelCallback,
     Position (Position),
     Rect (rect),
@@ -61,6 +67,7 @@ import Graphics.UI.GLUT
     loadIdentity,
     mainLoop,
     matrixMode,
+    mouseCallback,
     mouseWheelCallback,
     ortho2D,
     postRedisplay,
@@ -74,9 +81,10 @@ import Parsers.CSSParser
     cascadeSheets,
     parseStyleSheet,
   )
-import Parsers.ElementStyle (ElementStyle (background, color, fontSize))
-import Parsers.HTMLParser (parsePage)
-import Parsers.ParserUtils.Parser
+import Parsers.ElementStyle (ElementStyle (background, color, fontSize), emptyStyle)
+import Parsers.HTMLParser (HTMLDOM, parseHTMLPage)
+import Parsers.JSParser (parseBackgroundEventScript)
+import Parsers.ParserUtils.Parser (Parser (runParser))
 
 {-
   TODO:
@@ -99,6 +107,8 @@ import Parsers.ParserUtils.Parser
 type HTMLFile = String
 
 type CSSFile = String
+
+type JSFile = String
 
 windowInitWidth :: Int
 windowInitWidth = 1200
@@ -172,16 +182,29 @@ drawDisplayTree fontPath tree = withStyle (getElementStyle tree) (drawDisplayTre
     drawDisplayTree' (DisplayNode box elementStyle []) = drawBox box
     drawDisplayTree' (DisplayNode box elementStyle children) = drawBox box >> forM_ children (drawDisplayTree fontPath)
 
-maybeToDefautPage :: FontPath -> String -> String -> DisplayTree
-maybeToDefautPage fontPath html css = fromMaybe errorTree displayTree
+maybeToDefautPage :: FontPath -> String -> String -> (HTMLDOM, StyleMap, ShallowTree, DisplayTree)
+maybeToDefautPage fontPath htmlFile cssFile = (htmlDOM, styleMap, shallowTree, displayTree)
   where
+    htmlDOM :: HTMLDOM
+    htmlDOM = snd $ fromJust $ runParser parseHTMLPage htmlFile
+
     styleSheet :: StyleSheet
-    styleSheet = snd (fromJust (runParser parseStyleSheet css))
+    styleSheet = snd (fromJust (runParser parseStyleSheet cssFile))
     styleMap :: StyleMap
     styleMap = cascadeSheets styleSheet
 
-    displayTree :: Maybe DisplayTree
-    displayTree = parseDisplay' html
+    shallowTree :: ShallowTree
+    shallowTree = htmlToShallow styleMap htmlDOM
+
+    displayTree :: DisplayTree
+    displayTree =
+      shallowToDisplay
+        emptyStyle
+        fontPath
+        (0, 0)
+        windowInitWidth
+        shallowTree
+
     errorTree :: DisplayTree
     errorTree = fromJust $ parseDisplay' errorPage
       where
@@ -224,13 +247,32 @@ onDisplay fontPath displayTree = do
   drawDisplayTree fontPath displayTree
   flush
 
-setCallbacks :: HTMLFile -> CSSFile -> FontPath -> IO ()
-setCallbacks htmlFile cssFile fontPath = do
-  let displayTree = maybeToDefautPage fontPath htmlFile cssFile
+setCallbacks :: HTMLFile -> CSSFile -> JSFile -> FontPath -> IO ()
+setCallbacks htmlFile cssFile jsFile fontPath = do
+  let (htmlDOM, styleMap, shallowTree, displayTree) = maybeToDefautPage fontPath htmlFile cssFile
+  let clickEvents = snd $ fromJust $ runParser parseBackgroundEventScript jsFile
+  let backgroundChangeFunc = combineBackgroundChange clickEvents
+  let newStyle = backgroundChangeFunc styleMap
 
   reshapeCallback $= Just onReshape
   displayCallback $= onDisplay fontPath displayTree
   mouseWheelCallback $= Just (onScroll (getPageHeight displayTree))
+  mouseCallback
+    $= Just
+      ( \mouseButton keyState position ->
+          ( do
+              when
+                (mouseButton == LeftButton && keyState == Down)
+                ( do
+                    let displayTree = shallowToDisplay' (htmlToShallow newStyle htmlDOM)
+                    displayCallback $= onDisplay fontPath displayTree
+                    mouseCallback $= Nothing
+                    postRedisplay Nothing
+                )
+          )
+      )
   where
     getPageHeight (DisplayNode (Box (_, h) _) _ _) = h
     getPageHeight (DisplayLeaf (Box (_, h) _) _ _) = h
+    shallowToDisplay' :: ShallowTree -> DisplayTree
+    shallowToDisplay' = shallowToDisplay emptyStyle fontPath (0, 0) windowInitWidth

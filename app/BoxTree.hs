@@ -17,7 +17,7 @@ import Graphics.Rendering.FTGL
   )
 import Parsers.CSSParser (Selector (ElementSelector), StyleMap (..))
 import Parsers.ElementStyle (ElementStyle (fontSize), emptyStyle, (<|>>))
-import Parsers.HTMLParser (HTMLDOM (..), parsePage)
+import Parsers.HTMLParser (HTMLDOM (..), parseHTMLPage)
 import Parsers.ParserUtils.Parser (Parser)
 
 {-
@@ -178,4 +178,11 @@ htmlToShallow (StyleMap styleMap) = htmlToShallow'
         elementStyle = if member (ElementSelector tag) styleMap then styleMap ! ElementSelector tag else emptyStyle
 
 parseDisplay :: StyleMap -> FontPath -> CornerPosition -> Int -> Parser DisplayTree
-parseDisplay styleMap font corner width = shallowToDisplay emptyStyle font corner width . htmlToShallow styleMap <$> parsePage
+parseDisplay styleMap font corner width =
+  shallowToDisplay
+    emptyStyle
+    font
+    corner
+    width
+    . htmlToShallow styleMap
+    <$> parseHTMLPage

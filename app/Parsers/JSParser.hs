@@ -36,6 +36,7 @@ parseBackgroundChangeStatement =
               *\\> parseString "\"#"
             *> parseColorHex
             <* parseChar '\"'
+              <//* parseChar ';'
         )
 
 parseBackgroundColorLambda :: Parser ClickEvent
@@ -56,5 +57,5 @@ parseBackgroundEventScript = parseMaxPossible parseBackgroundColorClickEvent <//
 mainJS :: IO ()
 mainJS = do
   file <- readFile "script.js"
-  let res = runParser parseBackgroundEventScript file
+  let res = snd <$> runParser parseBackgroundEventScript file
   print res
