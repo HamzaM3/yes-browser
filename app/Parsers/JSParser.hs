@@ -1,24 +1,30 @@
 module Parsers.JSParser where
 
+import Control.Applicative ((<|>))
 import Graphics.Rendering.OpenGL (Color4, GLfloat)
 import Parsers.HTMLParser (Tag, stringToTag)
 import Parsers.ParserUtils.BaseParser (parseAlpha, parseChar, parseColorHex, parseEnd, parseString)
-import Parsers.ParserUtils.Parser (Parser (..), parseMaxPossible, parseWhiteSpace, (*\\>), (</*), (<//*))
+import Parsers.ParserUtils.Parser (Parser (..), parseMaxPossibleWithWhiteSpace, parseWhiteSpace, (*\\>), (</*), (<//*))
 
-data ClickEvent = BackgroundColorClickEvent Tag (Color4 GLfloat)
+data StyleChangeAction = BackgroundColorChangeAction Tag (Color4 GLfloat) | ColorChangeAction Tag (Color4 GLfloat)
   deriving (Show, Eq)
 
-data Event = ClickEvent
+newtype Event = ClickEvent [StyleChangeAction]
+  deriving (Show, Eq)
 
-type ClickEvents = [ClickEvent]
+type Events = [Event]
 
-parseAddEventListenerMethod :: Parser ClickEvent
+type PropertyName = String
+
+parseAddEventListenerMethod :: Parser Event
 parseAddEventListenerMethod =
-  parseString "document.addEventListener("
-    *\\> parseString "\"click\""
-    *\\> parseChar ','
-    *\\> parseBackgroundColorLambda
-    <//* parseChar ')'
+  ClickEvent
+    <$> ( parseString "document.addEventListener("
+            *\\> parseString "\"click\""
+            *\\> parseChar ','
+            *\\> parseStyleChangeLambda
+            <//* parseChar ')'
+        )
 
 parseClickString :: Parser String
 parseClickString = parseString "\"click\""
@@ -26,21 +32,32 @@ parseClickString = parseString "\"click\""
 parseComma :: Parser Char
 parseComma = parseChar ','
 
-parseBackgroundChangeStatement :: Parser ClickEvent
-parseBackgroundChangeStatement =
-  BackgroundColorClickEvent
+parseBackgroundChangeStatement :: Parser StyleChangeAction
+parseBackgroundChangeStatement = parseTagStyleChangeStatement BackgroundColorChangeAction "backgroundColor"
+
+parseColorChangeStatement :: Parser StyleChangeAction
+parseColorChangeStatement = parseTagStyleChangeStatement ColorChangeAction "color"
+
+parseStyleChangeStatement :: Parser StyleChangeAction
+parseStyleChangeStatement = parseBackgroundChangeStatement <|> parseColorChangeStatement
+
+parseTagStyleChangeStatement :: (Tag -> Color4 GLfloat -> StyleChangeAction) -> PropertyName -> Parser StyleChangeAction
+parseTagStyleChangeStatement constructor property =
+  constructor
     <$> (stringToTag <$> parseAlpha)
-    <*> ( parseChar '.'
-            *> parseString "style.backgroundColor"
-              *\\> parseChar '='
-              *\\> parseString "\"#"
+    <*> ( parseString (".style." ++ property)
+            *\\> parseChar '='
+            *\\> parseString "\"#"
             *> parseColorHex
             <* parseChar '\"'
               <//* parseChar ';'
         )
 
-parseBackgroundColorLambda :: Parser ClickEvent
-parseBackgroundColorLambda = parseLambdaStart *\\> parseBackgroundChangeStatement <//* parseLambdaEnd
+parseStyleChangeLambda :: Parser [StyleChangeAction]
+parseStyleChangeLambda =
+  parseLambdaStart
+    *\\> parseMaxPossibleWithWhiteSpace parseStyleChangeStatement
+    <//* parseLambdaEnd
   where
     parseLambdaStart :: Parser Char
     parseLambdaStart = parseChar '(' *\\> parseChar ')' *\\> parseString "=>" *\\> parseChar '{'
@@ -48,14 +65,16 @@ parseBackgroundColorLambda = parseLambdaStart *\\> parseBackgroundChangeStatemen
     parseLambdaEnd :: Parser Char
     parseLambdaEnd = parseChar '}'
 
-parseBackgroundColorClickEvent :: Parser ClickEvent
-parseBackgroundColorClickEvent = parseWhiteSpace *> parseAddEventListenerMethod </* parseChar ';'
+parseBackgroundColorClickEvent :: Parser Event
+parseBackgroundColorClickEvent = parseAddEventListenerMethod </* parseChar ';'
 
-parseBackgroundEventScript :: Parser ClickEvents
-parseBackgroundEventScript = parseMaxPossible parseBackgroundColorClickEvent <//* parseEnd
+parseBackgroundEventScript :: Parser Events
+parseBackgroundEventScript = parseMaxPossibleWithWhiteSpace parseBackgroundColorClickEvent <//* parseEnd
 
 mainJS :: IO ()
 mainJS = do
   file <- readFile "script.js"
-  let res = snd <$> runParser parseBackgroundEventScript file
+  let res =
+        snd
+          <$> runParser parseBackgroundEventScript file
   print res

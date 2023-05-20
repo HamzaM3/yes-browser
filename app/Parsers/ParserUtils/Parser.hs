@@ -119,4 +119,15 @@ parseMaxPossible p = Parser $ \input ->
       Nothing -> Just (rest, [out])
       Just (rest', out') -> Just (rest', out : out')
 
+withDefault :: a -> Parser a -> Parser a
+withDefault defaultValue parser = parser <|> pure defaultValue
+
+parseMaxPossibleWithWhiteSpace :: Parser a -> Parser [a]
+parseMaxPossibleWithWhiteSpace p = Parser $ \input ->
+  case runParser (parseWhiteSpace *> p <* parseWhiteSpace) input of
+    Nothing -> Just (input, [])
+    Just (rest, out) -> case runParser (parseMaxPossibleWithWhiteSpace p) rest of
+      Nothing -> Just (rest, [out])
+      Just (rest', out') -> Just (rest', out : out')
+
 ---

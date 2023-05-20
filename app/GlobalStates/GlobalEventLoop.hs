@@ -5,25 +5,36 @@ import Data.Map (alter, member, (!), (!?))
 import Data.Maybe (fromMaybe)
 import Graphics.Rendering.OpenGL (Color4, GLfloat)
 import Parsers.CSSParser (Selector (ElementSelector), StyleMap (StyleMap))
-import Parsers.ElementStyle (ElementStyle, backgroundStyle, (<|>>))
+import Parsers.ElementStyle (ElementStyle, backgroundStyle, colorStyle, (<|>>))
 import Parsers.HTMLParser (Tag)
-import Parsers.JSParser (ClickEvent (BackgroundColorClickEvent), ClickEvents)
+import Parsers.JSParser
 
-updateBackground :: Tag -> Color4 GLfloat -> StyleMap -> StyleMap
-updateBackground tag col (StyleMap styleMap) = newStyleMap
+alterTagStyle :: ElementStyle -> Maybe ElementStyle -> Maybe ElementStyle
+alterTagStyle newProperty Nothing = Just newProperty
+alterTagStyle newProperty (Just oldStyle) = Just (oldStyle <|>> newProperty)
+
+updateStyle :: StyleChangeAction -> StyleMap -> StyleMap
+updateStyle (BackgroundColorChangeAction tag col) (StyleMap styleMap) =
+  StyleMap $
+    alter
+      (alterTagStyle (backgroundStyle col))
+      (ElementSelector tag)
+      styleMap
+updateStyle (ColorChangeAction tag col) (StyleMap styleMap) =
+  StyleMap $
+    alter
+      (alterTagStyle (colorStyle col))
+      (ElementSelector tag)
+      styleMap
   where
-    newBackground :: ElementStyle
-    newBackground = backgroundStyle col
-    newStyleMap :: StyleMap
-    newStyleMap = StyleMap $ alter alterTagStyle (ElementSelector tag) styleMap
-    alterTagStyle :: Maybe ElementStyle -> Maybe ElementStyle
-    alterTagStyle Nothing = Just newBackground
-    alterTagStyle (Just oldStyle) = Just (oldStyle <|>> newBackground)
+    newProperty :: StyleChangeAction -> ElementStyle
+    newProperty (BackgroundColorChangeAction _ col) = backgroundStyle col
+    newProperty (ColorChangeAction _ col) = colorStyle col
 
-combineBackgroundChange :: ClickEvents -> StyleMap -> StyleMap
+combineBackgroundChange :: Events -> StyleMap -> StyleMap
 combineBackgroundChange clickEvents = foldr1 (flip (.)) updateFunctionsList
   where
-    updateBackground' :: ClickEvent -> StyleMap -> StyleMap
-    updateBackground' (BackgroundColorClickEvent tag cols) = updateBackground tag cols
+    patternMatch :: Event -> [StyleChangeAction]
+    patternMatch (ClickEvent actionList) = actionList
     updateFunctionsList :: [StyleMap -> StyleMap]
-    updateFunctionsList = updateBackground' <$> clickEvents
+    updateFunctionsList = concatMap (updateStyle <$>) (patternMatch <$> clickEvents)
