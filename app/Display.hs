@@ -18,9 +18,9 @@ import Data.StateVar
     HasSetter (($=)),
   )
 import GHC.IO.Unsafe (unsafePerformIO)
-import GlobalStates.GlobalEventLoop (combineBackgroundChange)
+import GlobalStates.GlobalDOM (currentFontPath, currentHTML, currentStyle, currentStyleMap, withStyle)
+import GlobalStates.GlobalEventLoop (combineStyleChange, currentStyleChange)
 import GlobalStates.GlobalScroll (ScrollState (ScrollState, scrollPosition), currentScrollState)
-import GlobalStates.GlobalStyle (currentStyle, withStyle)
 import Graphics.Rendering.FTGL
   ( Font,
     Layout,
@@ -83,7 +83,7 @@ import Parsers.CSSParser
   )
 import Parsers.ElementStyle (ElementStyle (background, color, fontSize), emptyStyle)
 import Parsers.HTMLParser (HTMLDOM, parseHTMLPage)
-import Parsers.JSParser (parseBackgroundEventScript)
+import Parsers.JSParser (parseScript)
 import Parsers.ParserUtils.Parser (Parser (runParser))
 
 {-
@@ -182,17 +182,15 @@ drawDisplayTree fontPath tree = withStyle (getElementStyle tree) (drawDisplayTre
     drawDisplayTree' (DisplayNode box elementStyle []) = drawBox box
     drawDisplayTree' (DisplayNode box elementStyle children) = drawBox box >> forM_ children (drawDisplayTree fontPath)
 
-maybeToDefautPage :: FontPath -> String -> String -> (HTMLDOM, StyleMap, ShallowTree, DisplayTree)
-maybeToDefautPage fontPath htmlFile cssFile = (htmlDOM, styleMap, shallowTree, displayTree)
+getHTMLFromFile :: String -> HTMLDOM
+getHTMLFromFile = snd . fromJust . runParser parseHTMLPage
+
+getStyleMapFromFile :: String -> StyleMap
+getStyleMapFromFile = cascadeSheets . snd . fromJust . runParser parseStyleSheet
+
+maybeToDefautPage :: FontPath -> HTMLDOM -> StyleMap -> DisplayTree
+maybeToDefautPage fontPath htmlDOM styleMap = displayTree
   where
-    htmlDOM :: HTMLDOM
-    htmlDOM = snd $ fromJust $ runParser parseHTMLPage htmlFile
-
-    styleSheet :: StyleSheet
-    styleSheet = snd (fromJust (runParser parseStyleSheet cssFile))
-    styleMap :: StyleMap
-    styleMap = cascadeSheets styleSheet
-
     shallowTree :: ShallowTree
     shallowTree = htmlToShallow styleMap htmlDOM
 
@@ -241,36 +239,55 @@ onScroll pageH _ dir _ = do
     speed = 50
     scrollALittle (ScrollState s _) = ScrollState (-dir * speed + s) pageH
 
-onDisplay :: FontPath -> DisplayTree -> DisplayCallback
-onDisplay fontPath displayTree = do
+onDisplay :: FontPath -> DisplayCallback
+onDisplay fontPath = do
   clear [ColorBuffer]
+  displayTree <- calculateDisplayTree
   drawDisplayTree fontPath displayTree
   flush
 
+getCurrentDOMData :: IO (FontPath, HTMLDOM, StyleMap)
+getCurrentDOMData = do
+  fontPath <- get currentFontPath
+  htmlDOM <- get currentHTML
+  styleMap <- get currentStyleMap
+  return (fontPath, htmlDOM, styleMap)
+
+calculateDisplayTree :: IO DisplayTree
+calculateDisplayTree = do
+  (fontPath, htmlDOM, styleMap) <- getCurrentDOMData
+  let displayTree = maybeToDefautPage fontPath htmlDOM styleMap
+  return displayTree
+
+onClick :: IO ()
+onClick = do
+  styleChange <- get currentStyleChange
+  styleMap <- get currentStyleMap
+  currentStyleMap $= styleChange styleMap
+  postRedisplay Nothing
+
+onMouseEvent :: MouseButton -> KeyState -> Position -> IO ()
+onMouseEvent LeftButton Down _ = onClick
+onMouseEvent _ _ _ = return ()
+
 setCallbacks :: HTMLFile -> CSSFile -> JSFile -> FontPath -> IO ()
 setCallbacks htmlFile cssFile jsFile fontPath = do
-  let (htmlDOM, styleMap, shallowTree, displayTree) = maybeToDefautPage fontPath htmlFile cssFile
-  let clickEvents = snd $ fromJust $ runParser parseBackgroundEventScript jsFile
-  let backgroundChangeFunc = combineBackgroundChange clickEvents
-  let newStyle = backgroundChangeFunc styleMap
+  currentStyleMap $= getStyleMapFromFile cssFile
+  currentHTML $= getHTMLFromFile htmlFile
+  currentFontPath $= fontPath
+  (fontPath, htmlDOM, styleMap) <- getCurrentDOMData
+  let displayTree = maybeToDefautPage fontPath htmlDOM styleMap
+
+  -- lazy is real
+  let clickEvents = snd $ fromJust $ runParser parseScript jsFile
+  let backgroundChangeFunc = combineStyleChange clickEvents
+
+  currentStyleChange $= backgroundChangeFunc
 
   reshapeCallback $= Just onReshape
-  displayCallback $= onDisplay fontPath displayTree
+  displayCallback $= onDisplay fontPath
   mouseWheelCallback $= Just (onScroll (getPageHeight displayTree))
-  mouseCallback
-    $= Just
-      ( \mouseButton keyState position ->
-          ( do
-              when
-                (mouseButton == LeftButton && keyState == Down)
-                ( do
-                    let displayTree = shallowToDisplay' (htmlToShallow newStyle htmlDOM)
-                    displayCallback $= onDisplay fontPath displayTree
-                    mouseCallback $= Nothing
-                    postRedisplay Nothing
-                )
-          )
-      )
+  mouseCallback $= Just onMouseEvent
   where
     getPageHeight (DisplayNode (Box (_, h) _) _ _) = h
     getPageHeight (DisplayLeaf (Box (_, h) _) _ _) = h

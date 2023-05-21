@@ -1,19 +1,24 @@
-module GlobalStates.GlobalStyle where
+module GlobalStates.GlobalDOM where
 
+import Data.IORef (IORef, newIORef)
+import Data.Map (singleton)
 import Data.Maybe (fromJust)
 import Data.StateVar (HasGetter (get), StateVar (..), ($=))
 import Foreign (Ptr, Storable, malloc)
 import GHC.IO (unsafePerformIO)
 import Graphics.Rendering.OpenGL (Color4 (..), GLfloat)
+import Parsers.CSSParser (Selector (ElementSelector), StyleMap (StyleMap))
 import Parsers.ElementStyle
   ( ElementStyle (ElementStyle),
     defaultStyle,
+    emptyStyle,
   )
 import qualified Parsers.ElementStyle
   ( background,
     color,
     fontSize,
   )
+import Parsers.HTMLParser (HTMLDOM (SelfClosed), Tag (PTag))
 
 {-
   TODO:
@@ -74,3 +79,15 @@ withStyle elementStyle action = do
   currentStyle $= elementStyle
   action
   currentStyle $= oldStyle
+
+currentFontPath :: IORef String
+{-# NOINLINE currentFontPath #-}
+currentFontPath = unsafePerformIO $ newIORef "testFiles/font/Roboto/Roboto-Medium.ttf"
+
+currentHTML :: IORef HTMLDOM
+{-# NOINLINE currentHTML #-}
+currentHTML = unsafePerformIO $ newIORef (SelfClosed PTag)
+
+currentStyleMap :: IORef StyleMap
+{-# NOINLINE currentStyleMap #-}
+currentStyleMap = unsafePerformIO $ newIORef $ StyleMap (singleton (ElementSelector PTag) emptyStyle)

@@ -16,22 +16,6 @@ type Events = [Event]
 
 type PropertyName = String
 
-parseAddEventListenerMethod :: Parser Event
-parseAddEventListenerMethod =
-  ClickEvent
-    <$> ( parseString "document.addEventListener("
-            *\\> parseString "\"click\""
-            *\\> parseChar ','
-            *\\> parseStyleChangeLambda
-            <//* parseChar ')'
-        )
-
-parseClickString :: Parser String
-parseClickString = parseString "\"click\""
-
-parseComma :: Parser Char
-parseComma = parseChar ','
-
 parseBackgroundChangeStatement :: Parser StyleChangeAction
 parseBackgroundChangeStatement = parseTagStyleChangeStatement BackgroundColorChangeAction "backgroundColor"
 
@@ -65,16 +49,26 @@ parseStyleChangeLambda =
     parseLambdaEnd :: Parser Char
     parseLambdaEnd = parseChar '}'
 
-parseBackgroundColorClickEvent :: Parser Event
-parseBackgroundColorClickEvent = parseAddEventListenerMethod </* parseChar ';'
+parseAddEventListenerMethod :: Parser Event
+parseAddEventListenerMethod =
+  ClickEvent
+    <$> ( parseString "document.addEventListener("
+            *\\> parseString "\"click\""
+            *\\> parseChar ','
+            *\\> parseStyleChangeLambda
+            <//* parseChar ')'
+        )
 
-parseBackgroundEventScript :: Parser Events
-parseBackgroundEventScript = parseMaxPossibleWithWhiteSpace parseBackgroundColorClickEvent <//* parseEnd
+parseStyleChangeClickEvent :: Parser Event
+parseStyleChangeClickEvent = parseAddEventListenerMethod </* parseChar ';'
+
+parseScript :: Parser Events
+parseScript = parseMaxPossibleWithWhiteSpace parseStyleChangeClickEvent <//* parseEnd
 
 mainJS :: IO ()
 mainJS = do
   file <- readFile "script.js"
   let res =
         snd
-          <$> runParser parseBackgroundEventScript file
+          <$> runParser parseScript file
   print res
