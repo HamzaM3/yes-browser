@@ -275,7 +275,9 @@ setCallbacks htmlFile cssFile jsFile fontPath = do
   currentStyleMap $= getStyleMapFromFile cssFile
   currentHTML $= getHTMLFromFile htmlFile
   currentFontPath $= fontPath
+
   (fontPath, htmlDOM, styleMap) <- getCurrentDOMData
+
   let displayTree = maybeToDefautPage fontPath htmlDOM styleMap
 
   -- lazy is real

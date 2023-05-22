@@ -27,6 +27,13 @@ It's not that hard to understand and not that hard to do in my opinion.
 
 For example, the basic properties of CSS are actually very few: https://www.w3.org/TR/CSS2/propidx.html#q24.0
 
+## Current direction: Javascript
+
+- [x] style change callback
+- [x] global DOM state
+- [x] style change script parsing
+- [ ] add/remove event parsing
+
 ## Todo
 
 _Directions:_ Generalization and Optimization

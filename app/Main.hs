@@ -23,4 +23,4 @@ mainFinal = do
     jsPath = "script.js"
 
 main :: IO ()
-main = mainFinal
+main = mainJS
