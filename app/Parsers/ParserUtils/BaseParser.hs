@@ -6,8 +6,10 @@ import Control.Applicative (Alternative (..), (<**>))
 import Control.Lens.Lens
 import Data.Char (isAlpha, isDigit)
 import Data.Tuple (swap)
+import Graphics.Rendering.OpenGL (Color4, GLfloat)
+import Parsers.ParserUtils.CheckParser
 import Parsers.ParserUtils.Parser (Parser (..))
-import Parsers.ParserUtils.ParsingUtils (mapSnd, nothingIf)
+import Parsers.ParserUtils.ParsingUtils (hexToColor4, isAuthorized, mapSnd, nothingIf)
 
 parseRest :: Parser String
 parseRest = p <* (parseChar '\n' <|> pure 'a') -- turn maybe parsers into unfailable parser (not OK)
@@ -49,3 +51,6 @@ parseString s = Parser $ nothingIf ((/=) s . snd) . swap . splitAt (length s)
 
 parseExcludeChars :: [Char] -> Parser String
 parseExcludeChars l = parseSpan (and . (map (/=) l ??))
+
+parseColorHex :: Parser (Color4 GLfloat)
+parseColorHex = hexToColor4 <$> (parseSpan (isAuthorized "1234567890ABCDEFabcdef") >>= checkLength 6)

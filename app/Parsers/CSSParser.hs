@@ -7,9 +7,24 @@ import Data.Map (Map, singleton, unionsWith)
 import qualified GHC.Generics
 import Graphics.UI.GLUT (Color4 (Color4), GLfloat)
 import Parsers.ElementStyle
-import Parsers.HTMLParser
+  ( ElementStyle,
+    backgroundStyle,
+    colorStyle,
+    emptyStyle,
+    fontSizeStyle,
+    (<|>>),
+  )
+import Parsers.HTMLParser (Tag, stringToTag)
 import Parsers.ParserUtils.BaseParser
-import Parsers.ParserUtils.CheckParser
+  ( parseAlpha,
+    parseChar,
+    parseColorHex,
+    parseDigit,
+    parseEnd,
+    parseSpan,
+    parseString,
+  )
+import Parsers.ParserUtils.CheckParser (checkLength)
 import Parsers.ParserUtils.Parser
   ( Parser (runParser),
     parseMaxPossible,
@@ -60,9 +75,6 @@ newtype StyleSheet = StyleSheet Rules
 
 newtype StyleMap = StyleMap (Map Selector ElementStyle)
   deriving (Show, Eq)
-
-parseColorHex :: Parser (Color4 GLfloat)
-parseColorHex = hexToColor4 <$> (parseSpan (isAuthorized "1234567890ABCDEFabcdef") >>= checkLength 6)
 
 parseSelector :: Parser Selector
 parseSelector = ElementSelector . stringToTag <$> parseAlpha

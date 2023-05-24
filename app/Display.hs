@@ -6,17 +6,21 @@ import BoxTree
     Dimension,
     DisplayTree (..),
     FontPath,
+    ShallowTree,
+    htmlToShallow,
     parseDisplay,
+    shallowToDisplay,
   )
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.StateVar
   ( HasGetter (get),
     HasSetter (($=)),
   )
 import GHC.IO.Unsafe (unsafePerformIO)
+import GlobalStates.GlobalDOM (currentFontPath, currentHTML, currentStyle, currentStyleMap, withStyle)
+import GlobalStates.GlobalEventLoop (combineStyleChange, currentStyleChange)
 import GlobalStates.GlobalScroll (ScrollState (ScrollState, scrollPosition), currentScrollState)
-import GlobalStates.GlobalStyle (currentStyle, withStyle)
 import Graphics.Rendering.FTGL
   ( Font,
     Layout,
@@ -40,8 +44,10 @@ import Graphics.UI.GLUT
     DisplayCallback,
     DisplayMode (RGBMode, SingleBuffered),
     GLfloat,
+    KeyState (Down),
     MatrixComponent (translate),
     MatrixMode (Modelview, Projection),
+    MouseButton (LeftButton),
     MouseWheelCallback,
     Position (Position),
     Rect (rect),
@@ -61,6 +67,7 @@ import Graphics.UI.GLUT
     loadIdentity,
     mainLoop,
     matrixMode,
+    mouseCallback,
     mouseWheelCallback,
     ortho2D,
     postRedisplay,
@@ -74,9 +81,10 @@ import Parsers.CSSParser
     cascadeSheets,
     parseStyleSheet,
   )
-import Parsers.ElementStyle (ElementStyle (background, color, fontSize))
-import Parsers.HTMLParser (parsePage)
-import Parsers.ParserUtils.Parser
+import Parsers.ElementStyle (ElementStyle (background, color, fontSize), emptyStyle)
+import Parsers.HTMLParser (HTMLDOM, parseHTMLPage)
+import Parsers.JSParser (parseScript)
+import Parsers.ParserUtils.Parser (Parser (runParser))
 
 {-
   TODO:
@@ -99,6 +107,8 @@ import Parsers.ParserUtils.Parser
 type HTMLFile = String
 
 type CSSFile = String
+
+type JSFile = String
 
 windowInitWidth :: Int
 windowInitWidth = 1200
@@ -172,16 +182,27 @@ drawDisplayTree fontPath tree = withStyle (getElementStyle tree) (drawDisplayTre
     drawDisplayTree' (DisplayNode box elementStyle []) = drawBox box
     drawDisplayTree' (DisplayNode box elementStyle children) = drawBox box >> forM_ children (drawDisplayTree fontPath)
 
-maybeToDefautPage :: FontPath -> String -> String -> DisplayTree
-maybeToDefautPage fontPath html css = fromMaybe errorTree displayTree
-  where
-    styleSheet :: StyleSheet
-    styleSheet = snd (fromJust (runParser parseStyleSheet css))
-    styleMap :: StyleMap
-    styleMap = cascadeSheets styleSheet
+getHTMLFromFile :: String -> HTMLDOM
+getHTMLFromFile = snd . fromJust . runParser parseHTMLPage
 
-    displayTree :: Maybe DisplayTree
-    displayTree = parseDisplay' html
+getStyleMapFromFile :: String -> StyleMap
+getStyleMapFromFile = cascadeSheets . snd . fromJust . runParser parseStyleSheet
+
+maybeToDefautPage :: FontPath -> HTMLDOM -> StyleMap -> DisplayTree
+maybeToDefautPage fontPath htmlDOM styleMap = displayTree
+  where
+    shallowTree :: ShallowTree
+    shallowTree = htmlToShallow styleMap htmlDOM
+
+    displayTree :: DisplayTree
+    displayTree =
+      shallowToDisplay
+        emptyStyle
+        fontPath
+        (0, 0)
+        windowInitWidth
+        shallowTree
+
     errorTree :: DisplayTree
     errorTree = fromJust $ parseDisplay' errorPage
       where
@@ -218,19 +239,59 @@ onScroll pageH _ dir _ = do
     speed = 50
     scrollALittle (ScrollState s _) = ScrollState (-dir * speed + s) pageH
 
-onDisplay :: FontPath -> DisplayTree -> DisplayCallback
-onDisplay fontPath displayTree = do
+onDisplay :: FontPath -> DisplayCallback
+onDisplay fontPath = do
   clear [ColorBuffer]
+  displayTree <- calculateDisplayTree
   drawDisplayTree fontPath displayTree
   flush
 
-setCallbacks :: HTMLFile -> CSSFile -> FontPath -> IO ()
-setCallbacks htmlFile cssFile fontPath = do
-  let displayTree = maybeToDefautPage fontPath htmlFile cssFile
+getCurrentDOMData :: IO (FontPath, HTMLDOM, StyleMap)
+getCurrentDOMData = do
+  fontPath <- get currentFontPath
+  htmlDOM <- get currentHTML
+  styleMap <- get currentStyleMap
+  return (fontPath, htmlDOM, styleMap)
+
+calculateDisplayTree :: IO DisplayTree
+calculateDisplayTree = do
+  (fontPath, htmlDOM, styleMap) <- getCurrentDOMData
+  let displayTree = maybeToDefautPage fontPath htmlDOM styleMap
+  return displayTree
+
+onClick :: IO ()
+onClick = do
+  styleChange <- get currentStyleChange
+  styleMap <- get currentStyleMap
+  currentStyleMap $= styleChange styleMap
+  postRedisplay Nothing
+
+onMouseEvent :: MouseButton -> KeyState -> Position -> IO ()
+onMouseEvent LeftButton Down _ = onClick
+onMouseEvent _ _ _ = return ()
+
+setCallbacks :: HTMLFile -> CSSFile -> JSFile -> FontPath -> IO ()
+setCallbacks htmlFile cssFile jsFile fontPath = do
+  currentStyleMap $= getStyleMapFromFile cssFile
+  currentHTML $= getHTMLFromFile htmlFile
+  currentFontPath $= fontPath
+
+  (fontPath, htmlDOM, styleMap) <- getCurrentDOMData
+
+  let displayTree = maybeToDefautPage fontPath htmlDOM styleMap
+
+  -- lazy is real
+  let clickEvents = snd $ fromJust $ runParser parseScript jsFile
+  let backgroundChangeFunc = combineStyleChange clickEvents
+
+  currentStyleChange $= backgroundChangeFunc
 
   reshapeCallback $= Just onReshape
-  displayCallback $= onDisplay fontPath displayTree
+  displayCallback $= onDisplay fontPath
   mouseWheelCallback $= Just (onScroll (getPageHeight displayTree))
+  mouseCallback $= Just onMouseEvent
   where
     getPageHeight (DisplayNode (Box (_, h) _) _ _) = h
     getPageHeight (DisplayLeaf (Box (_, h) _) _ _) = h
+    shallowToDisplay' :: ShallowTree -> DisplayTree
+    shallowToDisplay' = shallowToDisplay emptyStyle fontPath (0, 0) windowInitWidth

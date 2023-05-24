@@ -81,14 +81,14 @@ parseSelfClosed = SelfClosed <$> parseSelfClosingTag
 parseHTML :: Parser HTMLDOM
 parseHTML = parseWhiteSpace *\\> (parseSelfClosed <|> parseTextNode <|> parseNode)
 
-parsePage :: Parser HTMLDOM
-parsePage = parseWhiteSpace *\\> parseNode <//* parseWhiteSpace <//* parseEnd
+parseHTMLPage :: Parser HTMLDOM
+parseHTMLPage = parseWhiteSpace *\\> parseNode <//* parseWhiteSpace <//* parseEnd
 
 mainParser :: IO ()
 mainParser = do
   print $
     runParser
-      parsePage
+      parseHTMLPage
       "<html>\
       \<head>\
       \<title>Auto-generated html formated source</title>\
